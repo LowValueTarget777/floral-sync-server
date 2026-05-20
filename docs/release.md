@@ -34,7 +34,36 @@ cargo build --release
 - `docs/build.md`
 - `docs/protocol.md`
 
-## 3. 二进制发布
+## 3. GitHub Actions 自动发布二进制 Release
+
+仓库现在包含自动发布工作流：[.github/workflows/release.yml](../.github/workflows/release.yml)。
+
+触发方式：
+
+- 推送形如 `v0.1.1` 的 tag
+- 在 GitHub Actions 页面手动运行，并填写一个已经存在的 tag
+
+工作流会自动执行以下步骤：
+
+- 校验 tag 是否和 `Cargo.toml` 里的版本号一致
+- 在 Ubuntu 上执行 `cargo test --locked`
+- 构建 Windows `x86_64-pc-windows-msvc` 二进制
+- 构建 Linux `x86_64-unknown-linux-gnu` 和 `x86_64-unknown-linux-musl` 二进制
+- 打包构建产物并生成 `SHA256SUMS.txt`
+- 自动创建或更新对应的 GitHub Release，并附加构建产物
+
+这个工作流只依赖仓库自带的 `GITHUB_TOKEN`，不需要额外 secrets。
+
+推荐发布动作：
+
+```bash
+git tag v0.1.1
+git push origin v0.1.1
+```
+
+如果你修改了 `Cargo.toml` 版本号但 tag 没对上，工作流会直接失败，避免把错误版本发出去。
+
+## 4. 二进制发布
 
 ### Windows 主机
 
@@ -62,7 +91,7 @@ bash ./scripts/release.sh
 
 最终二进制会汇总到 `target/release-artifacts/`。
 
-## 4. Docker 镜像发布
+## 5. Docker 镜像发布
 
 公开镜像仓库：`namelsscinder/floral-sync-server`
 
@@ -100,7 +129,7 @@ bash ./scripts/docker-release.sh --image namelsscinder/floral-sync-server --plat
 - 同时发布 `latest`
 - 不带 `-Push` / `--push` 时仅在本地构建并加载镜像
 
-## 5. 发布后核对
+## 6. 发布后核对
 
 镜像发布后，检查远端标签是否可见：
 
@@ -115,7 +144,7 @@ docker buildx imagetools inspect namelsscinder/floral-sync-server:latest
 - `latest` 指向刚发布的版本
 - 平台列表符合预期，例如 `linux/amd64` 或 `linux/amd64` + `linux/arm64`
 
-## 6. 发布记录建议
+## 7. 发布记录建议
 
 每次对外发布后，建议至少完成：
 
