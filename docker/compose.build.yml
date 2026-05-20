@@ -1,0 +1,5 @@
+services:
+  floral-sync-server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
