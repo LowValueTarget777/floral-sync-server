@@ -47,12 +47,20 @@ cargo build --release
 
 - 校验 tag 是否和 `Cargo.toml` 里的版本号一致
 - 在 Ubuntu 上执行 `cargo test --locked`
+- 验证一次 `--no-default-features` 的 lite 构建
 - 构建 Windows `x86_64-pc-windows-msvc` 二进制
 - 构建 Linux `x86_64-unknown-linux-gnu` 和 `x86_64-unknown-linux-musl` 二进制
+- 同时附加 sync-only 的 lite 二进制附件
 - 打包构建产物并生成 `SHA256SUMS.txt`
 - 自动创建或更新对应的 GitHub Release，并附加构建产物
 
 这个工作流只依赖仓库自带的 `GITHUB_TOKEN`，不需要额外 secrets。
+
+lite 附件命名规则：
+
+- `floral-sync-server-lite-vX.Y.Z-x86_64-pc-windows-msvc.zip`
+- `floral-sync-server-lite-vX.Y.Z-x86_64-linux-gnu.tar.gz`
+- `floral-sync-server-lite-vX.Y.Z-x86_64-linux-musl.tar.gz`
 
 推荐发布动作：
 
@@ -71,10 +79,20 @@ git push origin v0.1.1
 ./scripts/build.ps1
 ```
 
+如果你希望同时产出 lite 变体：
+
+```powershell
+./scripts/build.ps1 -IncludeLite
+```
+
 或直接使用底层发布脚本：
 
 ```powershell
 ./scripts/release.ps1
+```
+
+```powershell
+./scripts/release.ps1 -IncludeLite
 ```
 
 ### Linux / macOS 主机
@@ -83,10 +101,20 @@ git push origin v0.1.1
 bash ./scripts/build.sh
 ```
 
+如果你希望同时产出 lite 变体：
+
+```bash
+bash ./scripts/build.sh --include-lite
+```
+
 或直接使用底层发布脚本：
 
 ```bash
 bash ./scripts/release.sh
+```
+
+```bash
+bash ./scripts/release.sh --include-lite
 ```
 
 最终二进制会汇总到 `target/release-artifacts/`。

@@ -79,11 +79,11 @@ struct StoredConfig {
     sync_token: String,
     #[serde(default, skip_serializing)]
     token: String,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     admin_listen: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     admin_password_hash: Option<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     admin_session_secret: String,
 }
 
@@ -139,7 +139,7 @@ pub fn load_or_create_config(
     Ok(ServerConfig {
         config_path: config_path.to_path_buf(),
         sync_listen,
-        admin_listen: normalize_listen_addresses("admin_listen", stored.admin_listen.clone())?,
+        admin_listen: normalize_admin_listen(stored.admin_listen.clone())?,
         db_path: resolve_path_from_config(config_path, db_path),
         export_dir: resolve_path_from_config(config_path, Path::new(&stored.export_dir)),
         log_path: resolve_path_from_config(config_path, Path::new(&stored.log_path)),
@@ -246,12 +246,11 @@ fn normalize_stored_config(stored: &mut StoredConfig) -> Result<bool, ConfigErro
         changed = true;
     }
 
-    if stored.admin_listen.is_empty() {
+    if stored.admin_listen.is_empty() && cfg!(feature = "admin") {
         stored.admin_listen = default_admin_listen();
         changed = true;
     }
-    let normalized_admin_listen =
-        normalize_listen_addresses("admin_listen", stored.admin_listen.clone())?;
+    let normalized_admin_listen = normalize_admin_listen(stored.admin_listen.clone())?;
     if normalized_admin_listen != stored.admin_listen {
         stored.admin_listen = normalized_admin_listen;
         changed = true;
@@ -314,9 +313,14 @@ fn normalize_stored_config(stored: &mut StoredConfig) -> Result<bool, ConfigErro
     }
 
     let normalized_admin_session_secret = stored.admin_session_secret.trim().to_string();
-    if normalized_admin_session_secret.is_empty() {
-        stored.admin_session_secret = generate_token();
-        changed = true;
+    if cfg!(feature = "admin") {
+        if normalized_admin_session_secret.is_empty() {
+            stored.admin_session_secret = generate_token();
+            changed = true;
+        } else if normalized_admin_session_secret != stored.admin_session_secret {
+            stored.admin_session_secret = normalized_admin_session_secret;
+            changed = true;
+        }
     } else if normalized_admin_session_secret != stored.admin_session_secret {
         stored.admin_session_secret = normalized_admin_session_secret;
         changed = true;
@@ -337,7 +341,7 @@ fn normalize_stored_config(stored: &mut StoredConfig) -> Result<bool, ConfigErro
     if stored.sync_token.trim().is_empty() {
         return Err(ConfigError::Invalid("sync_token must not be empty".into()));
     }
-    if stored.admin_session_secret.trim().is_empty() {
+    if cfg!(feature = "admin") && stored.admin_session_secret.trim().is_empty() {
         return Err(ConfigError::Invalid(
             "admin_session_secret must not be empty".into(),
         ));
@@ -346,6 +350,21 @@ fn normalize_stored_config(stored: &mut StoredConfig) -> Result<bool, ConfigErro
 }
 
 fn normalize_listen_addresses(
+    field_name: &str,
+    listen: Vec<String>,
+) -> Result<Vec<String>, ConfigError> {
+    let normalized = normalize_optional_listen_addresses(field_name, listen)?;
+
+    if normalized.is_empty() {
+        return Err(ConfigError::Invalid(
+            format!("{field_name} must contain at least one address"),
+        ));
+    }
+
+    Ok(normalized)
+}
+
+fn normalize_optional_listen_addresses(
     field_name: &str,
     listen: Vec<String>,
 ) -> Result<Vec<String>, ConfigError> {
@@ -365,13 +384,15 @@ fn normalize_listen_addresses(
         }
     }
 
-    if normalized.is_empty() {
-        return Err(ConfigError::Invalid(
-            format!("{field_name} must contain at least one address"),
-        ));
-    }
-
     Ok(normalized)
+}
+
+fn normalize_admin_listen(listen: Vec<String>) -> Result<Vec<String>, ConfigError> {
+    if cfg!(feature = "admin") {
+        normalize_listen_addresses("admin_listen", listen)
+    } else {
+        normalize_optional_listen_addresses("admin_listen", listen)
+    }
 }
 
 pub fn apply_config_patch(
@@ -384,7 +405,7 @@ pub fn apply_config_patch(
         updated.sync_listen = normalize_listen_addresses("sync_listen", listen.clone())?;
     }
     if let Some(admin_listen) = &patch.admin_listen {
-        updated.admin_listen = normalize_listen_addresses("admin_listen", admin_listen.clone())?;
+        updated.admin_listen = normalize_admin_listen(admin_listen.clone())?;
     }
     if let Some(db_path) = &patch.db_path {
         updated.db_path = normalize_patch_path(&current.config_path, "db_path", db_path)?;
@@ -469,7 +490,11 @@ fn is_legacy_single_stack_default_sync_listen(sync_listen: &[String]) -> bool {
 }
 
 fn default_admin_listen() -> Vec<String> {
-    vec!["127.0.0.1:8788".into(), "[::1]:8788".into()]
+    if cfg!(feature = "admin") {
+        vec!["127.0.0.1:8788".into(), "[::1]:8788".into()]
+    } else {
+        Vec::new()
+    }
 }
 
 fn default_db_path() -> String {
@@ -502,7 +527,11 @@ impl Default for StoredConfig {
             token: String::new(),
             admin_listen: default_admin_listen(),
             admin_password_hash: None,
-            admin_session_secret: generate_token(),
+            admin_session_secret: if cfg!(feature = "admin") {
+                generate_token()
+            } else {
+                String::new()
+            },
         }
     }
 }

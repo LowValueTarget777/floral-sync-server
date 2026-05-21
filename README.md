@@ -61,6 +61,7 @@ cargo run
 - Windows: `floral-sync-server-vX.Y.Z-x86_64-pc-windows-msvc.zip`
 - 常见 Linux 发行版（Debian / Ubuntu / Fedora 等）: `floral-sync-server-vX.Y.Z-x86_64-linux-gnu.tar.gz`
 - Alpine 或其他 musl 环境: `floral-sync-server-vX.Y.Z-x86_64-linux-musl.tar.gz`
+- 仅保留同步能力的 lite 版本会以 `floral-sync-server-lite-vX.Y.Z-*` 命名，不包含内嵌管理后台，也不会监听管理端口
 
 解压后就可以直接运行：
 

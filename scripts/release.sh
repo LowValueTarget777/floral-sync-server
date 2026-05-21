@@ -5,6 +5,7 @@ dry_run=false
 skip_linux_gnu=false
 skip_linux_musl=false
 skip_install=false
+include_lite=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -22,6 +23,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-install)
       skip_install=true
+      shift
+      ;;
+    --include-lite)
+      include_lite=true
       shift
       ;;
     *)
@@ -130,6 +135,18 @@ if [[ "$skip_linux_gnu" == false ]]; then
     "Collect Linux GNU artifact" \
     "cp \"$TARGET_ROOT/x86_64-unknown-linux-gnu/release/floral-sync-server\" \"$ARTIFACT_DIR/floral-sync-server-x86_64-linux-gnu\"" \
     cp "$TARGET_ROOT/x86_64-unknown-linux-gnu/release/floral-sync-server" "$ARTIFACT_DIR/floral-sync-server-x86_64-linux-gnu"
+
+  if [[ "$include_lite" == true ]]; then
+    run_step \
+      "Build Linux GNU lite release" \
+      "cargo zigbuild --manifest-path \"$MANIFEST_PATH\" --target x86_64-unknown-linux-gnu --release --no-default-features" \
+      cargo zigbuild --manifest-path "$MANIFEST_PATH" --target x86_64-unknown-linux-gnu --release --no-default-features
+
+    run_step \
+      "Collect Linux GNU lite artifact" \
+      "cp \"$TARGET_ROOT/x86_64-unknown-linux-gnu/release/floral-sync-server\" \"$ARTIFACT_DIR/floral-sync-server-lite-x86_64-linux-gnu\"" \
+      cp "$TARGET_ROOT/x86_64-unknown-linux-gnu/release/floral-sync-server" "$ARTIFACT_DIR/floral-sync-server-lite-x86_64-linux-gnu"
+  fi
 fi
 
 if [[ "$skip_linux_musl" == false ]]; then
@@ -147,6 +164,18 @@ if [[ "$skip_linux_musl" == false ]]; then
     "Collect Linux musl artifact" \
     "cp \"$TARGET_ROOT/x86_64-unknown-linux-musl/release/floral-sync-server\" \"$ARTIFACT_DIR/floral-sync-server-x86_64-linux-musl\"" \
     cp "$TARGET_ROOT/x86_64-unknown-linux-musl/release/floral-sync-server" "$ARTIFACT_DIR/floral-sync-server-x86_64-linux-musl"
+
+  if [[ "$include_lite" == true ]]; then
+    run_step \
+      "Build Linux musl lite release" \
+      "cargo zigbuild --manifest-path \"$MANIFEST_PATH\" --target x86_64-unknown-linux-musl --release --no-default-features" \
+      cargo zigbuild --manifest-path "$MANIFEST_PATH" --target x86_64-unknown-linux-musl --release --no-default-features
+
+    run_step \
+      "Collect Linux musl lite artifact" \
+      "cp \"$TARGET_ROOT/x86_64-unknown-linux-musl/release/floral-sync-server\" \"$ARTIFACT_DIR/floral-sync-server-lite-x86_64-linux-musl\"" \
+      cp "$TARGET_ROOT/x86_64-unknown-linux-musl/release/floral-sync-server" "$ARTIFACT_DIR/floral-sync-server-lite-x86_64-linux-musl"
+  fi
 fi
 
 echo "Release artifacts are available under $ARTIFACT_DIR"

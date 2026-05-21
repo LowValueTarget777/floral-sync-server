@@ -1,4 +1,6 @@
+#[cfg(feature = "admin")]
 pub mod admin_api;
+#[cfg(feature = "admin")]
 pub mod admin_web;
 pub mod auth;
 pub mod config;

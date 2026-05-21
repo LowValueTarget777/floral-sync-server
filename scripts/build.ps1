@@ -4,7 +4,8 @@ param(
     [ValidateSet("all", "windows", "linux", "linux-gnu", "linux-musl")]
     [string[]]$Target = @("all"),
     [switch]$DryRun,
-    [switch]$SkipInstall
+    [switch]$SkipInstall,
+    [switch]$IncludeLite
 )
 
 $ErrorActionPreference = "Stop"
@@ -60,6 +61,10 @@ if ($DryRun) {
 
 if ($SkipInstall) {
     $forwardedParams.SkipInstall = $true
+}
+
+if ($IncludeLite) {
+    $forwardedParams.IncludeLite = $true
 }
 
 if (-not $buildWindows) {

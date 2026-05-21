@@ -4,13 +4,17 @@ use axum::{
 };
 use clap::{ArgAction, Args, Parser, Subcommand};
 use floral_sync_server::{
-    admin_api::{router as admin_router, AdminAppState, RestartHandle},
     config::{
         default_config_path, generate_token, load_or_create_config, update_config_file,
         ConfigOverrides, ConfigPatch, RuntimeConfig, ServerConfig,
     },
-    store::{AdminStore, StoreError, SyncStore},
+    store::{StoreError, SyncStore},
     sync_api::{changes, health, push, wait_for_change, AppState},
+};
+#[cfg(feature = "admin")]
+use floral_sync_server::{
+    admin_api::{router as admin_router, AdminAppState, RestartHandle},
+    store::AdminStore,
 };
 use socket2::{Domain, Protocol, Socket, Type};
 use std::{
@@ -97,6 +101,7 @@ enum MainError {
     Join(#[from] tokio::task::JoinError),
     #[error("a listener stopped unexpectedly")]
     ListenerStopped,
+    #[cfg(feature = "admin")]
     #[error("restart requested")]
     RestartRequested,
 }
@@ -105,6 +110,7 @@ enum MainError {
 async fn main() {
     match run().await {
         Ok(()) => {}
+        #[cfg(feature = "admin")]
         Err(MainError::RestartRequested) => {
             println!("Restart requested; shutting down so the supervisor can start a fresh instance.");
             process::exit(0);
@@ -181,8 +187,10 @@ fn handle_config_command(config_path: &Path, args: ConfigArgs) -> Result<(), Mai
 
 async fn serve(config: ServerConfig) -> Result<(), MainError> {
     let sync_store = SyncStore::open(&config.db_path)?;
-    let admin_store = AdminStore::open_shared(sync_store.connection())?;
     let runtime_config = RuntimeConfig::new(config.clone());
+    #[cfg(feature = "admin")]
+    let admin_store = AdminStore::open_shared(sync_store.connection())?;
+    #[cfg(feature = "admin")]
     let restart_handle = RestartHandle::new();
 
     let sync_state = AppState::new(sync_store.clone(), runtime_config.clone());
@@ -193,6 +201,7 @@ async fn serve(config: ServerConfig) -> Result<(), MainError> {
         .route("/v1/push", post(push))
         .layer(TraceLayer::new_for_http())
         .with_state(sync_state);
+    #[cfg(feature = "admin")]
     let admin_app = admin_router(AdminAppState::new(
         sync_store,
         admin_store,
@@ -202,6 +211,7 @@ async fn serve(config: ServerConfig) -> Result<(), MainError> {
     .layer(TraceLayer::new_for_http());
 
     let sync_listeners = bind_listeners(&config.sync_listen)?;
+    #[cfg(feature = "admin")]
     let admin_listeners = bind_listeners(&config.admin_listen)?;
     println!("Config: {}", config.config_path.display());
     println!("Database: {}", config.db_path.display());
@@ -209,23 +219,34 @@ async fn serve(config: ServerConfig) -> Result<(), MainError> {
     for address in &config.sync_listen {
         println!("Sync listening on {address}");
     }
+    #[cfg(feature = "admin")]
     for address in &config.admin_listen {
         println!("Admin listening on {address}");
     }
+    #[cfg(not(feature = "admin"))]
+    println!("Admin UI: disabled in this build");
 
     let mut join_set = JoinSet::new();
     for listener in sync_listeners {
         let app = sync_app.clone();
-        let restart = restart_handle.clone();
-        join_set.spawn(async move {
-            axum::serve(listener, app)
-                .with_graceful_shutdown(async move {
-                    restart.wait_for_restart().await;
-                })
-                .await
-                .map_err(MainError::from)
-        });
+        #[cfg(feature = "admin")]
+        {
+            let restart = restart_handle.clone();
+            join_set.spawn(async move {
+                axum::serve(listener, app)
+                    .with_graceful_shutdown(async move {
+                        restart.wait_for_restart().await;
+                    })
+                    .await
+                    .map_err(MainError::from)
+            });
+        }
+        #[cfg(not(feature = "admin"))]
+        {
+            join_set.spawn(async move { axum::serve(listener, app).await.map_err(MainError::from) });
+        }
     }
+    #[cfg(feature = "admin")]
     for listener in admin_listeners {
         let app = admin_app.clone();
         let restart = restart_handle.clone();
@@ -241,14 +262,22 @@ async fn serve(config: ServerConfig) -> Result<(), MainError> {
 
     while let Some(result) = join_set.join_next().await {
         result??;
+        #[cfg(feature = "admin")]
         if !restart_handle.is_requested() {
             return Err(MainError::ListenerStopped);
         }
+        #[cfg(not(feature = "admin"))]
+        return Err(MainError::ListenerStopped);
     }
 
+    #[cfg(feature = "admin")]
     if restart_handle.is_requested() {
         Err(MainError::RestartRequested)
     } else {
+        Err(MainError::ListenerStopped)
+    }
+    #[cfg(not(feature = "admin"))]
+    {
         Err(MainError::ListenerStopped)
     }
 }

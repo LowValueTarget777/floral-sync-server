@@ -56,7 +56,26 @@ npm --prefix admin-ui run build
 这一步会把 `admin-ui/` 里的 React 管理后台构建成静态资源，然后嵌入 Rust 二进制。
 因此即使你只改 Rust 代码，只要仓库里启用了管理后台构建，也必须保证本地 Node.js 和 npm 可用。
 
-## 4. 验证构建产物
+## 4. 构建不带管理后台的 lite 二进制
+
+如果你只需要同步服务，不需要内嵌管理后台，可以直接关闭默认 feature：
+
+```bash
+cargo build --release --no-default-features
+```
+
+这会生成一个 sync-only 变体：
+
+- 不再执行 `admin-ui` 的前端构建
+- 不需要 Node.js / npm
+- 不包含管理后台静态资源和管理 API 路由
+
+构建输出路径仍然是：
+
+- `target/release/floral-sync-server`
+- Windows 下对应 `target/release/floral-sync-server.exe`
+
+## 5. 验证构建产物
 
 推荐在构建完成后做一次最小验证：
 
@@ -66,7 +85,7 @@ npm --prefix admin-ui run build
 
 如果同目录没有 `sync-server.toml`，命令会自动生成默认配置文件，这也能同时验证二进制是否能正常启动配置流程。
 
-## 5. 便捷构建脚本
+## 6. 便捷构建脚本
 
 优先使用仓库里的便捷入口脚本：
 
@@ -74,6 +93,11 @@ npm --prefix admin-ui run build
 - Linux / macOS 主机：`bash ./scripts/build.sh`
 
 它们会把目标选择转换成底层 `release` 脚本需要的参数，并继续把产物汇总到 `target/release-artifacts/`。
+
+如果你希望在同一轮发布构建里额外产出 lite 变体：
+
+- Windows 主机：`./scripts/build.ps1 -IncludeLite`
+- Linux / macOS 主机：`bash ./scripts/build.sh --include-lite`
 
 ### Windows
 

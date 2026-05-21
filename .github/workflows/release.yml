@@ -98,13 +98,30 @@ jobs:
       - name: Run tests
         run: cargo test --locked
 
+      - name: Verify lite build
+        run: cargo build --locked --release --no-default-features
+
   build-windows:
-    name: Build Windows x86_64
+    name: Build Windows ${{ matrix.variant_label }}
     runs-on: windows-2025
     needs:
       - prepare
       - verify
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant_label: x86_64 full
+            cargo_args: --locked --release
+            archive_name: floral-sync-server-v${VERSION}-x86_64-pc-windows-msvc.zip
+            artifact_name: release-windows-x86_64-pc-windows-msvc
+            with_admin: true
+          - variant_label: x86_64 lite
+            cargo_args: --locked --release --no-default-features
+            archive_name: floral-sync-server-lite-v${VERSION}-x86_64-pc-windows-msvc.zip
+            artifact_name: release-windows-x86_64-pc-windows-msvc-lite
+            with_admin: false
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -112,6 +129,7 @@ jobs:
           ref: ${{ needs.prepare.outputs.tag }}
 
       - name: Setup Node.js
+        if: ${{ matrix.with_admin }}
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -122,30 +140,32 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install admin UI dependencies
+        if: ${{ matrix.with_admin }}
         run: npm --prefix admin-ui ci
 
       - name: Build release binary
-        run: cargo build --locked --release
+        run: cargo build ${{ matrix.cargo_args }}
 
       - name: Package Windows artifact
         shell: pwsh
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
+          ARCHIVE_NAME: ${{ matrix.archive_name }}
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           Copy-Item target\release\floral-sync-server.exe dist\floral-sync-server.exe -Force
-          Compress-Archive -Path dist\floral-sync-server.exe -DestinationPath dist\floral-sync-server-v${env:VERSION}-x86_64-pc-windows-msvc.zip -Force
+          Compress-Archive -Path dist\floral-sync-server.exe -DestinationPath (Join-Path dist $env:ARCHIVE_NAME) -Force
           Remove-Item dist\floral-sync-server.exe -Force
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-windows-x86_64-pc-windows-msvc
+          name: ${{ matrix.artifact_name }}
           path: dist/*.zip
           if-no-files-found: error
 
   build-linux:
-    name: Build Linux ${{ matrix.label }}
+    name: Build Linux ${{ matrix.variant_label }}
     runs-on: ubuntu-latest
     needs:
       - prepare
@@ -156,9 +176,33 @@ jobs:
       matrix:
         include:
           - target: x86_64-unknown-linux-gnu
-            label: x86_64-linux-gnu
+            target_label: x86_64-linux-gnu
+            variant_label: x86_64-linux-gnu full
+            cargo_args: --locked --target x86_64-unknown-linux-gnu --release
+            archive_name: floral-sync-server-v${VERSION}-x86_64-linux-gnu.tar.gz
+            artifact_name: release-x86_64-linux-gnu
+            with_admin: true
+          - target: x86_64-unknown-linux-gnu
+            target_label: x86_64-linux-gnu
+            variant_label: x86_64-linux-gnu lite
+            cargo_args: --locked --target x86_64-unknown-linux-gnu --release --no-default-features
+            archive_name: floral-sync-server-lite-v${VERSION}-x86_64-linux-gnu.tar.gz
+            artifact_name: release-x86_64-linux-gnu-lite
+            with_admin: false
           - target: x86_64-unknown-linux-musl
-            label: x86_64-linux-musl
+            target_label: x86_64-linux-musl
+            variant_label: x86_64-linux-musl full
+            cargo_args: --locked --target x86_64-unknown-linux-musl --release
+            archive_name: floral-sync-server-v${VERSION}-x86_64-linux-musl.tar.gz
+            artifact_name: release-x86_64-linux-musl
+            with_admin: true
+          - target: x86_64-unknown-linux-musl
+            target_label: x86_64-linux-musl
+            variant_label: x86_64-linux-musl lite
+            cargo_args: --locked --target x86_64-unknown-linux-musl --release --no-default-features
+            archive_name: floral-sync-server-lite-v${VERSION}-x86_64-linux-musl.tar.gz
+            artifact_name: release-x86_64-linux-musl-lite
+            with_admin: false
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -166,6 +210,7 @@ jobs:
           ref: ${{ needs.prepare.outputs.tag }}
 
       - name: Setup Node.js
+        if: ${{ matrix.with_admin }}
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -186,27 +231,29 @@ jobs:
           tool: cargo-zigbuild
 
       - name: Install admin UI dependencies
+        if: ${{ matrix.with_admin }}
         run: npm --prefix admin-ui ci
 
       - name: Build release binary
-        run: cargo zigbuild --locked --target ${{ matrix.target }} --release
+        run: cargo zigbuild ${{ matrix.cargo_args }}
 
       - name: Package Linux artifact
         shell: bash
         env:
-          TARGET_LABEL: ${{ matrix.label }}
+          TARGET_LABEL: ${{ matrix.target_label }}
           VERSION: ${{ needs.prepare.outputs.version }}
+          ARCHIVE_NAME: ${{ matrix.archive_name }}
         run: |
           set -euo pipefail
           mkdir -p dist
           cp "target/${{ matrix.target }}/release/floral-sync-server" dist/floral-sync-server
-          tar -C dist -czf "dist/floral-sync-server-v${VERSION}-${TARGET_LABEL}.tar.gz" floral-sync-server
+          tar -C dist -czf "dist/${ARCHIVE_NAME}" floral-sync-server
           rm dist/floral-sync-server
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-${{ matrix.label }}
+          name: ${{ matrix.artifact_name }}
           path: dist/*.tar.gz
           if-no-files-found: error
 

@@ -1,6 +1,11 @@
 use std::{env, path::PathBuf, process::Command};
 
 fn main() {
+    println!("cargo:rerun-if-env-changed=CARGO_FEATURE_ADMIN");
+    if env::var_os("CARGO_FEATURE_ADMIN").is_none() {
+        return;
+    }
+
     println!("cargo:rerun-if-changed=admin-ui/index.html");
     println!("cargo:rerun-if-changed=admin-ui/package.json");
     println!("cargo:rerun-if-changed=admin-ui/tsconfig.json");

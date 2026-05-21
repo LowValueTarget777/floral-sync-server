@@ -3,6 +3,7 @@ set -euo pipefail
 
 dry_run=false
 skip_install=false
+include_lite=false
 targets=()
 
 while [[ $# -gt 0 ]]; do
@@ -21,6 +22,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-install)
       skip_install=true
+      shift
+      ;;
+    --include-lite)
+      include_lite=true
       shift
       ;;
     *)
@@ -80,6 +85,10 @@ fi
 
 if [[ "$skip_install" == true ]]; then
   release_args+=(--skip-install)
+fi
+
+if [[ "$include_lite" == true ]]; then
+  release_args+=(--include-lite)
 fi
 
 if [[ "$build_linux_gnu" == false ]]; then

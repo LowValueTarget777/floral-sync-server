@@ -4,7 +4,8 @@ param(
     [switch]$SkipWindows,
     [switch]$SkipLinuxGnu,
     [switch]$SkipLinuxMusl,
-    [switch]$SkipInstall
+    [switch]$SkipInstall,
+    [switch]$IncludeLite
 )
 
 $ErrorActionPreference = "Stop"
@@ -105,6 +106,13 @@ if (-not $SkipWindows) {
     $WindowsSource = Join-Path $TargetRoot "release\floral-sync-server.exe"
     $WindowsDest = Join-Path $ArtifactDir "floral-sync-server-x86_64-pc-windows-msvc.exe"
     Invoke-Step -Description "Collect Windows artifact" -CommandText "Copy-Item `"$WindowsSource`" `"$WindowsDest`" -Force" -Action { Copy-Item $WindowsSource $WindowsDest -Force }
+
+    if ($IncludeLite) {
+        Invoke-Step -Description "Build Windows lite release" -CommandText "cargo build --manifest-path `"$ManifestPath`" --release --no-default-features" -Action { cargo build --manifest-path $ManifestPath --release --no-default-features }
+
+        $WindowsLiteDest = Join-Path $ArtifactDir "floral-sync-server-lite-x86_64-pc-windows-msvc.exe"
+        Invoke-Step -Description "Collect Windows lite artifact" -CommandText "Copy-Item `"$WindowsSource`" `"$WindowsLiteDest`" -Force" -Action { Copy-Item $WindowsSource $WindowsLiteDest -Force }
+    }
 }
 
 if (-not $SkipLinuxGnu) {
@@ -115,6 +123,13 @@ if (-not $SkipLinuxGnu) {
     $LegacyLinuxGnuDest = Join-Path $ArtifactDir "floral-sync-server-x86_64-unknown-linux-gnu"
     Invoke-Step -Description "Remove legacy Linux GNU artifact name" -CommandText "Remove-Item `"$LegacyLinuxGnuDest`" -Force -ErrorAction SilentlyContinue" -Action { Remove-Item $LegacyLinuxGnuDest -Force -ErrorAction SilentlyContinue }
     Invoke-Step -Description "Collect Linux GNU artifact" -CommandText "Copy-Item `"$LinuxGnuSource`" `"$LinuxGnuDest`" -Force" -Action { Copy-Item $LinuxGnuSource $LinuxGnuDest -Force }
+
+    if ($IncludeLite) {
+        Invoke-Step -Description "Build Linux GNU lite release" -CommandText "cargo zigbuild --manifest-path `"$ManifestPath`" --target x86_64-unknown-linux-gnu --release --no-default-features" -Action { cargo zigbuild --manifest-path $ManifestPath --target x86_64-unknown-linux-gnu --release --no-default-features }
+
+        $LinuxGnuLiteDest = Join-Path $ArtifactDir "floral-sync-server-lite-x86_64-linux-gnu"
+        Invoke-Step -Description "Collect Linux GNU lite artifact" -CommandText "Copy-Item `"$LinuxGnuSource`" `"$LinuxGnuLiteDest`" -Force" -Action { Copy-Item $LinuxGnuSource $LinuxGnuLiteDest -Force }
+    }
 }
 
 if (-not $SkipLinuxMusl) {
@@ -125,6 +140,13 @@ if (-not $SkipLinuxMusl) {
     $LegacyLinuxMuslDest = Join-Path $ArtifactDir "floral-sync-server-x86_64-unknown-linux-musl"
     Invoke-Step -Description "Remove legacy Linux musl artifact name" -CommandText "Remove-Item `"$LegacyLinuxMuslDest`" -Force -ErrorAction SilentlyContinue" -Action { Remove-Item $LegacyLinuxMuslDest -Force -ErrorAction SilentlyContinue }
     Invoke-Step -Description "Collect Linux musl artifact" -CommandText "Copy-Item `"$LinuxMuslSource`" `"$LinuxMuslDest`" -Force" -Action { Copy-Item $LinuxMuslSource $LinuxMuslDest -Force }
+
+    if ($IncludeLite) {
+        Invoke-Step -Description "Build Linux musl lite release" -CommandText "cargo zigbuild --manifest-path `"$ManifestPath`" --target x86_64-unknown-linux-musl --release --no-default-features" -Action { cargo zigbuild --manifest-path $ManifestPath --target x86_64-unknown-linux-musl --release --no-default-features }
+
+        $LinuxMuslLiteDest = Join-Path $ArtifactDir "floral-sync-server-lite-x86_64-linux-musl"
+        Invoke-Step -Description "Collect Linux musl lite artifact" -CommandText "Copy-Item `"$LinuxMuslSource`" `"$LinuxMuslLiteDest`" -Force" -Action { Copy-Item $LinuxMuslSource $LinuxMuslLiteDest -Force }
+    }
 }
 
 Write-Host "Release artifacts are available under $ArtifactDir"
