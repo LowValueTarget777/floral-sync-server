@@ -12,7 +12,7 @@
 
 推荐使用语义化版本号，例如：
 
-- `0.1.1`
+- `0.1.3`
 - `0.2.0`
 - `1.0.0`
 
@@ -40,7 +40,7 @@ cargo build --release
 
 触发方式：
 
-- 推送形如 `v0.1.1` 的 tag
+- 推送形如 `v0.1.3` 的 tag
 - 在 GitHub Actions 页面手动运行，并填写一个已经存在的 tag
 
 工作流会自动执行以下步骤：
@@ -65,8 +65,8 @@ lite 附件命名规则：
 推荐发布动作：
 
 ```bash
-git tag v0.1.1
-git push origin v0.1.1
+git tag v0.1.3
+git push origin v0.1.3
 ```
 
 如果你修改了 `Cargo.toml` 版本号但 tag 没对上，工作流会直接失败，避免把错误版本发出去。
@@ -162,7 +162,7 @@ bash ./scripts/docker-release.sh --image namelsscinder/floral-sync-server --plat
 镜像发布后，检查远端标签是否可见：
 
 ```powershell
-docker buildx imagetools inspect namelsscinder/floral-sync-server:0.1.1
+docker buildx imagetools inspect namelsscinder/floral-sync-server:0.1.3
 docker buildx imagetools inspect namelsscinder/floral-sync-server:latest
 ```
 

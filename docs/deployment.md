@@ -68,7 +68,7 @@ Copy-Item docker/.env.example docker/.env
 
 如果你想固定到某个已验证版本，推荐改成明确版本号，例如：
 
-- `namelsscinder/floral-sync-server:0.1.1`
+- `namelsscinder/floral-sync-server:0.1.3`
 
 `FLORAL_ADMIN_PASSWORD_HASH` 可以先留空。这样第一次打开管理后台时，会进入一次性引导流程
 来设置管理员密码。
@@ -125,7 +125,7 @@ FLORAL_HOST_LOG_DIR=D:/floral-sync/logs
 ```yaml
 services:
   floral-sync-server:
-    image: namelsscinder/floral-sync-server:0.1.1
+    image: namelsscinder/floral-sync-server:0.1.3
     restart: unless-stopped
     ports:
       - "8787:8787"
@@ -185,24 +185,24 @@ docker run -d \
   --tmpfs /run \
   --security-opt no-new-privileges:true \
   --cap-drop ALL \
-  namelsscinder/floral-sync-server:0.1.1
+  namelsscinder/floral-sync-server:0.1.3
 ```
 
-这里的版本号推荐固定为已验证版本。`0.1.0` 已经被 `0.1.1` 替代，因为 `0.1.1` 包含了 NAS bind mount 首次写配置文件的权限修复。
+这里的版本号推荐固定为已验证版本。当前推荐固定到 `0.1.3`；如果你更看重快速跟进最新发布，也可以直接使用 `latest`。
 
 #### 使用仓库内维护的 compose 模板
 
 如果你想继续使用仓库里的 `docker/compose.yml` 和 `.env` 模板，也可以：
 
 ```powershell
-$env:FLORAL_IMAGE='namelsscinder/floral-sync-server:0.1.1'
+$env:FLORAL_IMAGE='namelsscinder/floral-sync-server:0.1.3'
 docker compose -f docker/compose.yml up -d
 ```
 
 Linux / macOS:
 
 ```bash
-FLORAL_IMAGE=namelsscinder/floral-sync-server:0.1.1 docker compose -f docker/compose.yml up -d
+FLORAL_IMAGE=namelsscinder/floral-sync-server:0.1.3 docker compose -f docker/compose.yml up -d
 ```
 
 #### 仓库内本地开发：从源码构建镜像

@@ -84,7 +84,7 @@ cargo run
 ```yaml
 services:
   floral-sync-server:
-    image: namelsscinder/floral-sync-server:0.1.1
+    image: namelsscinder/floral-sync-server:latest
     restart: unless-stopped
     ports:
       - "8787:8787"
@@ -142,8 +142,11 @@ docker run -d \
   --tmpfs /run \
   --security-opt no-new-privileges:true \
   --cap-drop ALL \
-  namelsscinder/floral-sync-server:0.1.1
+  namelsscinder/floral-sync-server:latest
 ```
+
+README 里的示例默认直接使用 `latest`，这样更适合快速上手。
+如果你要锁定一个明确版本，当前可固定到 `namelsscinder/floral-sync-server:0.1.3`。
 
 容器首次启动时，如果没有显式提供 `FLORAL_SYNC_TOKEN` 和 `FLORAL_ADMIN_SESSION_SECRET`，镜像会自动生成它们，
 写入宿主机上的 `sync-server.toml`，并在日志里打印同步 Token。
