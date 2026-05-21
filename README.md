@@ -54,6 +54,30 @@ cargo run
 - 启动日志会打印当前同步 Token
 - 首次打开后台会进入管理员密码引导设置流程
 
+### 直接下载 Release 二进制运行
+
+如果你不想本地安装 Rust 和 Node.js，可以直接从
+[GitHub Releases](https://github.com/LowValueTarget777/floral-sync-server/releases)
+下载已经编译好的二进制。
+
+可用产物：
+
+- Windows: `floral-sync-server-vX.Y.Z-x86_64-pc-windows-msvc.zip`
+- 常见 Linux 发行版（Debian / Ubuntu / Fedora 等）: `floral-sync-server-vX.Y.Z-x86_64-linux-gnu.tar.gz`
+- Alpine 或其他 musl 环境: `floral-sync-server-vX.Y.Z-x86_64-linux-musl.tar.gz`
+
+解压后就可以直接运行：
+
+- Windows: 直接打开 `floral-sync-server.exe`
+- Linux: 给二进制执行权限后直接运行 `./floral-sync-server`
+
+第一次启动时，程序会在可执行文件所在目录自动创建 `sync-server.toml`。
+
+如果你需要修改监听地址、数据库路径、日志路径、导出目录或同步 Token，直接编辑这个
+`sync-server.toml` 文件即可，然后重新启动服务。
+
+二进制直接运行时，默认端口、同步 Token 日志输出和首次管理员密码引导流程与源码运行一致。
+
 ### Docker 部署（推荐）
 
 已发布的公开镜像：`namelsscinder/floral-sync-server`。
