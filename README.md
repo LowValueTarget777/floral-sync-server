@@ -1,9 +1,5 @@
 # Floral Sync Server
 
-Self-hosted sync server for Floral Notepaper.
-
-Client project: [Floral Notepaper](https://github.com/Achilng/floral-notepaper)
-
 Floral Sync Server 是为 [Floral Notepaper](https://github.com/Achilng/floral-notepaper)
 提供自建同步能力的服务端，面向个人自托管场景，使用 Rust、Axum 和 SQLite 提供同步 API，
 并内嵌一个 React 管理后台用于查看状态、维护数据和调整服务端配置。
@@ -54,11 +50,11 @@ cargo run
 - 启动日志会打印当前同步 Token
 - 首次打开后台会进入管理员密码引导设置流程
 
-### 直接下载 Release 二进制运行
+### 直接下载 Release 版本运行
 
 如果你不想本地安装 Rust 和 Node.js，可以直接从
 [GitHub Releases](https://github.com/LowValueTarget777/floral-sync-server/releases)
-下载已经编译好的二进制。
+下载已经编译好的二进制文件。
 
 可用产物：
 
